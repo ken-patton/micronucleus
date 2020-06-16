@@ -3,16 +3,15 @@
  * This file (together with some settings in Makefile.inc) configures the boot loader
  * according to the hardware.
  * 
- * Controller type: ATtiny 85 - 16 MHz
+ * Controller type: ATmega168P - with external crystal
  * Configuration:   Aggresively size optimized configuration
- *       USB D- :   PB3
- *       USB D+ :   PB4
+ *       USB D- :   PC1
+ *       USB D+ :   PC2
  *       Entry  :   Always
- *       LED    :   None
+ *       LED    :   ACTIVE_HIGH at pin PD0
  *       OSCCAL :   Stays at 16 MHz
  * Note: Uses 16 MHz V-USB implementation. 
- *       Worked reliably in all tests, but is possibly less stable than 16.5M Hz Implementation with PLL
- * Last Change:     Jan 11,2015
+ * Last Change:     Dec. 8, 2018
  *
  * License: GNU GPL v2 (see License.txt
  */
@@ -25,16 +24,16 @@
 /*      Change this according to your CPU and USB configuration              */
 /* ------------------------------------------------------------------------- */
 
-#define USB_CFG_IOPORTNAME      B
+#define USB_CFG_IOPORTNAME      C
   /* This is the port where the USB bus is connected. When you configure it to
    * "B", the registers PORTB, PINB and DDRB will be used.
    */
 
-#define USB_CFG_DMINUS_BIT      3
+#define USB_CFG_DMINUS_BIT      1
 /* This is the bit number in USB_CFG_IOPORT where the USB D- line is connected.
  * This may be any bit in the port.
  */
-#define USB_CFG_DPLUS_BIT       4
+#define USB_CFG_DPLUS_BIT       2
 /* This is the bit number in USB_CFG_IOPORT where the USB D+ line is connected.
  * This may be any bit in the port, but must be configured as a pin change interrupt.
  */
@@ -56,14 +55,22 @@
 
 
 // setup interrupt for Pin Change for D+
-#define USB_INTR_CFG            PCMSK
+// register where interrupt features are configured
+#define USB_INTR_CFG            PCMSK1  
+// feature bits to set
 #define USB_INTR_CFG_SET        (1 << USB_CFG_DPLUS_BIT)
+// feature bits to clear
 #define USB_INTR_CFG_CLR        0
-#define USB_INTR_ENABLE         GIMSK
-#define USB_INTR_ENABLE_BIT     PCIE
-#define USB_INTR_PENDING        GIFR
-#define USB_INTR_PENDING_BIT    PCIF
-#define USB_INTR_VECTOR         PCINT0_vect
+// register where interrupt enable bit resides
+#define USB_INTR_ENABLE         PCICR
+// bit number in above register
+#define USB_INTR_ENABLE_BIT     PCIE1
+// register where interrupt pending bit resides
+#define USB_INTR_PENDING        PCIFR
+// bit number in above register
+#define USB_INTR_PENDING_BIT    PCIF1
+// interrupt vector
+#define USB_INTR_VECTOR         PCINT1_vect
 
 /* ------------------------------------------------------------------------- */
 /*       Configuration relevant to the CPU the bootloader is running on      */
@@ -164,7 +171,7 @@
  */
 
 #define AUTO_EXIT_NO_USB_MS    0
-#define AUTO_EXIT_MS           6000
+#define AUTO_EXIT_MS           2000
 
  /*
  *  Defines the setting of the RC-oscillator calibration after quitting the bootloader. (OSCCAL)
@@ -193,7 +200,7 @@
  
 #define OSCCAL_RESTORE_DEFAULT 0
 #define OSCCAL_SAVE_CALIB 0
-#define OSCCAL_HAVE_XTAL 0
+#define OSCCAL_HAVE_XTAL 1
 
   
 /*  
@@ -209,11 +216,11 @@
  *
  */ 
 
-#define LED_MODE    NONE
+#define LED_MODE    ACTIVE_HIGH
 
-#define LED_DDR     DDRB
-#define LED_PORT    PORTB
-#define LED_PIN     PB1
+#define LED_DDR     DDRD
+#define LED_PORT    PORTD
+#define LED_PIN     PD1
 
 /*
  *  This is the implementation of the LED code. Change the configuration above unless you want to 

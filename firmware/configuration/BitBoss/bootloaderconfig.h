@@ -1,22 +1,22 @@
- /* Name: bootloaderconfig.h
+/* Name: bootloaderconfig.h
  * Micronucleus configuration file. 
  * This file (together with some settings in Makefile.inc) configures the boot loader
  * according to the hardware.
  * 
- * Controller type: ATtiny 85 - 16 MHz
- * Configuration:   Aggresively size optimized configuration
- *       USB D- :   PB3
- *       USB D+ :   PB4
+ * Controller type: ATtiny 841 - 12 MHz
+ * Configuration:   Default configuration
+ *       USB D- :   PB0
+ *       USB D+ :   PB1
  *       Entry  :   Always
- *       LED    :   None
- *       OSCCAL :   Stays at 16 MHz
- * Note: Uses 16 MHz V-USB implementation. 
- *       Worked reliably in all tests, but is possibly less stable than 16.5M Hz Implementation with PLL
- * Last Change:     Jan 11,2015
+ *       LED    :   PB2, Active Low
+ *       OSCCAL :   Revert to precalibrated value (8 MHz)
+ * Note: can use 12 MHz V-USB without PLL due to stable RC-osc in ATTiny841
+ *       Flash write time may be too low.
+ * Last Change:     Mar 16,2014
  *
  * License: GNU GPL v2 (see License.txt
  */
- 
+
 #ifndef __bootloaderconfig_h_included__
 #define __bootloaderconfig_h_included__
 
@@ -30,11 +30,11 @@
    * "B", the registers PORTB, PINB and DDRB will be used.
    */
 
-#define USB_CFG_DMINUS_BIT      3
+#define USB_CFG_DMINUS_BIT      0
 /* This is the bit number in USB_CFG_IOPORT where the USB D- line is connected.
  * This may be any bit in the port.
  */
-#define USB_CFG_DPLUS_BIT       4
+#define USB_CFG_DPLUS_BIT       1
 /* This is the bit number in USB_CFG_IOPORT where the USB D+ line is connected.
  * This may be any bit in the port, but must be configured as a pin change interrupt.
  */
@@ -56,23 +56,29 @@
 
 
 // setup interrupt for Pin Change for D+
-#define USB_INTR_CFG            PCMSK
+#define USB_INTR_CFG            PCMSK1
 #define USB_INTR_CFG_SET        (1 << USB_CFG_DPLUS_BIT)
 #define USB_INTR_CFG_CLR        0
 #define USB_INTR_ENABLE         GIMSK
-#define USB_INTR_ENABLE_BIT     PCIE
+#define USB_INTR_ENABLE_BIT     PCIE1
 #define USB_INTR_PENDING        GIFR
-#define USB_INTR_PENDING_BIT    PCIF
-#define USB_INTR_VECTOR         PCINT0_vect
-
+#define USB_INTR_PENDING_BIT    PCIF1
+#define USB_INTR_VECTOR         PCINT1_vect
+    
 /* ------------------------------------------------------------------------- */
 /*       Configuration relevant to the CPU the bootloader is running on      */
 /* ------------------------------------------------------------------------- */
 
 // how many milliseconds should host wait till it sends another erase or write?
 // needs to be above 4.5 (and a whole integer) as avr freezes for 4.5ms
-#define MICRONUCLEUS_WRITE_SLEEP 5
 
+// Set bit 7 to reduce wait time for page erase by factor of four
+#define MICRONUCLEUS_WRITE_SLEEP 128 + 5
+
+// ATtiny841 does not know OSCCAL
+#ifndef OSCCAL
+#define OSCCAL OSCCAL0
+#endif
 
 /* ---------------------- feature / code size options ---------------------- */
 /*               Configure the behavior of the bootloader here               */
@@ -109,12 +115,12 @@
  * 
  */
 
-#define ENTRYMODE ENTRY_ALWAYS
+#define ENTRYMODE ENTRY_JUMPER
 
-#define JUMPER_PIN    PB0
-#define JUMPER_PORT   PORTB 
-#define JUMPER_DDR    DDRB 
-#define JUMPER_INP    PINB 
+#define JUMPER_PIN    PA0
+#define JUMPER_PORT   PORTA 
+#define JUMPER_DDR    DDRA 
+#define JUMPER_INP    PINA 
  
 /*
   Internal implementation, don't change this unless you want to add an entrymode.
@@ -191,10 +197,9 @@
  *  comes with its own OSCCAL calibration or an external clock source is used. 
  */
  
-#define OSCCAL_RESTORE_DEFAULT 0
-#define OSCCAL_SAVE_CALIB 0
+#define OSCCAL_ENTRY_ALWAYS
+#define OSCCAL_SAVE_CALIB 1
 #define OSCCAL_HAVE_XTAL 0
-
   
 /*  
  *  Defines handling of an indicator LED while the bootloader is active.  
@@ -209,11 +214,11 @@
  *
  */ 
 
-#define LED_MODE    NONE
+#define LED_MODE    ACTIVE_HIGH
 
 #define LED_DDR     DDRB
 #define LED_PORT    PORTB
-#define LED_PIN     PB1
+#define LED_PIN     PB2
 
 /*
  *  This is the implementation of the LED code. Change the configuration above unless you want to 
